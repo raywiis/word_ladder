@@ -30,7 +30,7 @@ fn bfs(map: HashMap<Split, HashSet<&String>>, start: String, end: String) -> i32
     queue.push_back((&start, 1));
     visited.insert(&start);
 
-    while queue.len() > 0 {
+    while !queue.is_empty() {
         let link = queue.pop_front().unwrap();
         for split in make_splits(link.0) {
             let neighbors: Vec<&String> = map
@@ -50,10 +50,10 @@ fn bfs(map: HashMap<Split, HashSet<&String>>, start: String, end: String) -> i32
         }
     }
 
-    return 0;
+    0
 }
 
-fn make_splits(word: &String) -> VecDeque<Split> {
+fn make_splits(word: &str) -> VecDeque<Split> {
     let mut splits: VecDeque<Split> = VecDeque::new();
     for i in 0..word.len() {
         let (a, b) = word.split_at(i);
