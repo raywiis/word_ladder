@@ -3,85 +3,63 @@ use std::collections::{HashMap, HashSet, VecDeque};
 struct Solution {}
 impl Solution {
     pub fn ladder_length(begin_word: String, end_word: String, word_list: Vec<String>) -> i32 {
-        let mut word_map: HashMap<String, HashSet<String>> = HashMap::new();
-        let mut map: HashMap<(String, String), HashSet<String>> = HashMap::new();
-
+        let mut map: HashMap<Split, HashSet<&String>> = HashMap::new();
         let mut word_list = word_list;
 
         word_list.push(begin_word.clone());
 
-        word_list.into_iter().for_each(|word| {
-            let keys = word_map.keys().cloned();
-            let single_offs: Vec<String> = keys.filter(|test| single_diff(test, &word)).collect();
-
-            single_offs.iter().cloned().for_each(|single_off| {
-                word_map
-                    .get_mut(&single_off)
-                    .unwrap()
-                    .insert(word.to_owned());
-            });
-            let nv: HashSet<String> = single_offs.into_iter().map(|s| s.to_owned()).collect();
-            word_map.insert(word, nv);
+        word_list.iter().for_each(|word| {
+            make_splits(&word).iter().for_each(|split| {
+                if !map.contains_key(split) {
+                    map.insert(split.clone(), HashSet::new());
+                }
+                map.get_mut(split).unwrap().insert(&word);
+            })
         });
-
-        bfs(word_map, &begin_word, &end_word)
+        bfs(map, begin_word, end_word)
     }
 }
 
-#[derive(PartialEq)]
-#[derive(Debug)]
+#[derive(PartialEq, Debug, Eq, Hash, Clone)]
 struct Split(String, String);
 
-fn make_splits(word: String) -> Vec<Split> {
-    let mut splits: Vec<Split> = vec!();
-    for i in 0..word.len() {
-        let (a, b) = word.split_at(i);
-        splits.push(Split(a.to_string(), b[1..].to_string()))
-    }
-    splits
-}
-
-struct Link<'a> {
-    word: &'a str,
-    dist: i32,
-}
-
-fn bfs(map: HashMap<String, HashSet<String>>, start: &String, end: &str) -> i32 {
-    let mut queue: VecDeque<Link> = VecDeque::new();
-    queue.push_back(Link {
-        word: &start,
-        dist: 1,
-    });
+fn bfs(map: HashMap<Split, HashSet<&String>>, start: String, end: String) -> i32 {
+    let mut queue: VecDeque<(&String, i32)> = VecDeque::new();
     let mut visited: HashSet<&String> = HashSet::new();
-    visited.insert(start);
+
+    queue.push_back((&start, 1));
+    visited.insert(&start);
 
     while queue.len() > 0 {
-        let curr = queue.pop_front().unwrap();
-        if curr.word == end {
-            return curr.dist;
-        }
-        let res = map.get(curr.word).unwrap();
-        res.iter().for_each(|word| {
-            if !visited.contains(word) {
-                visited.insert(word);
-                let l = Link {
-                    word: word,
-                    dist: curr.dist + 1,
-                };
-                queue.push_back(l)
+        let link = queue.pop_front().unwrap();
+        for split in make_splits(link.0) {
+            let neighbors: Vec<&String> = map
+                .get(&split)
+                .unwrap()
+                .iter()
+                .cloned()
+                .filter(|n| !visited.contains(n))
+                .collect();
+            for neighbor in neighbors {
+                if &end == neighbor {
+                    return link.1 + 1;
+                }
+                visited.insert(neighbor);
+                queue.push_back((neighbor, link.1 + 1));
             }
-        });
+        }
     }
 
-    0
+    return 0;
 }
 
-fn single_diff(a: &String, b: &String) -> bool {
-    a.chars()
-        .into_iter()
-        .zip(b.chars())
-        .fold(0, |acc, (ca, cb)| if ca == cb { acc } else { acc + 1 })
-        == 1
+fn make_splits(word: &String) -> VecDeque<Split> {
+    let mut splits: VecDeque<Split> = VecDeque::new();
+    for i in 0..word.len() {
+        let (a, b) = word.split_at(i);
+        splits.push_back(Split(a.to_string(), b[1..].to_string()))
+    }
+    splits
 }
 
 fn main() {
@@ -101,30 +79,36 @@ mod tests {
 
     #[test]
     fn make_splits_1() {
-        let word= "wow".to_string();
-        let splits = make_splits(word);
-        assert_eq!(splits, vec!(
-            Split("".to_string(), "ow".to_string()),
-            Split("w".to_string(), "w".to_string()),
-            Split("wo".to_string(), "".to_string()),
-        ));
+        let word = "wow".to_string();
+        let splits = make_splits(&word);
+        assert_eq!(
+            splits,
+            vec!(
+                Split("".to_string(), "ow".to_string()),
+                Split("w".to_string(), "w".to_string()),
+                Split("wo".to_string(), "".to_string()),
+            )
+        );
     }
 
     #[test]
     fn make_splits_2() {
-        let word= "fortunate".to_string();
-        let splits = make_splits(word);
-        assert_eq!(splits, vec!(
-            Split("".to_string(), "ortunate".to_string()),
-            Split("f".to_string(), "rtunate".to_string()),
-            Split("fo".to_string(), "tunate".to_string()),
-            Split("for".to_string(), "unate".to_string()),
-            Split("fort".to_string(), "nate".to_string()),
-            Split("fortu".to_string(), "ate".to_string()),
-            Split("fortun".to_string(), "te".to_string()),
-            Split("fortuna".to_string(), "e".to_string()),
-            Split("fortunat".to_string(), "".to_string()),
-        ));
+        let word = "fortunate".to_string();
+        let splits = make_splits(&word);
+        assert_eq!(
+            splits,
+            vec!(
+                Split("".to_string(), "ortunate".to_string()),
+                Split("f".to_string(), "rtunate".to_string()),
+                Split("fo".to_string(), "tunate".to_string()),
+                Split("for".to_string(), "unate".to_string()),
+                Split("fort".to_string(), "nate".to_string()),
+                Split("fortu".to_string(), "ate".to_string()),
+                Split("fortun".to_string(), "te".to_string()),
+                Split("fortuna".to_string(), "e".to_string()),
+                Split("fortunat".to_string(), "".to_string()),
+            )
+        );
     }
 
     #[test]
