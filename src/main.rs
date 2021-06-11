@@ -4,6 +4,7 @@ struct Solution {}
 impl Solution {
     pub fn ladder_length(begin_word: String, end_word: String, word_list: Vec<String>) -> i32 {
         let mut word_map: HashMap<String, HashSet<String>> = HashMap::new();
+        let mut map: HashMap<(String, String), HashSet<String>> = HashMap::new();
 
         let mut word_list = word_list;
 
@@ -25,6 +26,19 @@ impl Solution {
 
         bfs(word_map, &begin_word, &end_word)
     }
+}
+
+#[derive(PartialEq)]
+#[derive(Debug)]
+struct Split(String, String);
+
+fn make_splits(word: String) -> Vec<Split> {
+    let mut splits: Vec<Split> = vec!();
+    for i in 0..word.len() {
+        let (a, b) = word.split_at(i);
+        splits.push(Split(a.to_string(), b[1..].to_string()))
+    }
+    splits
 }
 
 struct Link<'a> {
@@ -84,6 +98,34 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn make_splits_1() {
+        let word= "wow".to_string();
+        let splits = make_splits(word);
+        assert_eq!(splits, vec!(
+            Split("".to_string(), "ow".to_string()),
+            Split("w".to_string(), "w".to_string()),
+            Split("wo".to_string(), "".to_string()),
+        ));
+    }
+
+    #[test]
+    fn make_splits_2() {
+        let word= "fortunate".to_string();
+        let splits = make_splits(word);
+        assert_eq!(splits, vec!(
+            Split("".to_string(), "ortunate".to_string()),
+            Split("f".to_string(), "rtunate".to_string()),
+            Split("fo".to_string(), "tunate".to_string()),
+            Split("for".to_string(), "unate".to_string()),
+            Split("fort".to_string(), "nate".to_string()),
+            Split("fortu".to_string(), "ate".to_string()),
+            Split("fortun".to_string(), "te".to_string()),
+            Split("fortuna".to_string(), "e".to_string()),
+            Split("fortunat".to_string(), "".to_string()),
+        ));
+    }
 
     #[test]
     fn case_1() {
